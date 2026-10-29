@@ -1,0 +1,35 @@
+{
+  "name": "dsh-haloring-status",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Writes live DSH agent status and turn progress to a lightweight status file for tray indicators, status bars and desktop widgets.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "status",
+    "indicator",
+    "progress",
+    "host-only",
+    "tray"
+  ],
+  "license": "GPL-3.0",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "HaloRing status bridge",
+    "description": "Writes DSH running, waiting, degraded, error, completed and idle states plus turn progress to a status file for the tray ring indicator."
+  }
+}
