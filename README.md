@@ -8,17 +8,7 @@
 - **零配置**：装上即用，无需 token、无需端口、无需认证
 - **跨进程友好**：输出是纯文本 `key=value`，任何语言都能解析
 
----
-
-## 它解决什么问题
-
-DSH 暴露了 WebSocket 事件流（`/api/remote.mux`），但外部程序要接进去必须：
-
-1. 拿到一次性的 `launchToken`（只存在于进程内存和启动 URL 里，用户得手动粘贴）
-2. 用 token 换签名 Cookie
-3. 处理 DSH 重启后 token 失效、需要重新获取的问题
-
-本插件把这件事提前做完，把结果落成一个文件。外部程序只需**读一个本地文本文件**：
+最终结果落成一个文件。外部程序只需**读一个本地文本文件**：
 
 ```text
 %USERPROFILE%\.dsh\dsh-status.txt
@@ -134,9 +124,8 @@ progress = 25 + 70 × (1 - e^(-已完成step数 / 3.2))  [+8 若正在执行工�
 ## 安装
 
 ```powershell
-dsh plugin --profile <你的profile> add github:<你的用户名>/<仓库名>
+dsh plugin --profile desktop add github:DeeepMind/dsh-haloring-status
 ```
-
 或本地安装：
 
 ```powershell
@@ -153,99 +142,11 @@ Get-Content "$env:USERPROFILE\.dsh\dsh-status.txt"
 
 应该看到内容且每秒更新。
 
-### 开发时的坑
-
-DSH 会把插件复制到 `~/.dsh/profiles/<profile>/node_modules/` 并从那里加载。
-**修改插件源码后，两处都要同步**，否则改动不生效：
-
-```
-源：    ~/.dsh/plugins/dsh-haloring-status/
-加载：  ~/.dsh/profiles/<profile>/node_modules/dsh-haloring-status/
-```
-
-改完还需要重启 DSH。
-
 ### 卸载
 
 ```powershell
 dsh plugin --profile <profile> remove dsh-haloring-status
 ```
-
----
-
-## 读取示例
-
-### PowerShell
-
-```powershell
-$f = "$env:USERPROFILE\.dsh\dsh-status.txt"
-$c = Get-Content $f -Raw
-if($c -match 'state=(\w+)'){ $state = $Matches[1] }
-if($c -match 'progress=(\d+)'){ $progress = [int]$Matches[1] }
-if($c -match 'updated=(\d+)'){
-    $age = (Get-Date) - [DateTimeOffset]::FromUnixTimeMilliseconds([long]$Matches[1]).LocalDateTime
-    if($age.TotalSeconds -gt 8){ $state = 'offline' }
-}
-```
-
-### Node.js
-
-```js
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
-const file = path.join(os.homedir(), '.dsh', 'dsh-status.txt');
-const text = fs.readFileSync(file, 'utf8');
-const fields = Object.fromEntries(
-  text.split('\n').map(l => l.trim()).filter(Boolean)
-      .map(l => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1)]; })
-);
-console.log(fields.state, fields.progress);
-```
-
-### Python
-
-```python
-from pathlib import Path
-import os
-
-file = Path(os.environ['USERPROFILE']) / '.dsh' / 'dsh-status.txt'
-fields = dict(
-    line.split('=', 1)
-    for line in file.read_text(encoding='utf-8').splitlines()
-    if '=' in line
-)
-print(fields['state'], fields['progress'])
-```
-
----
-
-## 配置
-
-插件没有用户可配置项。常量都在 `index.js` 顶部：
-
-```js
-const PROGRESS = {
-  base: 25,      // turn 开始时的起始进度
-  cap: 95,       // 未结束前的上限
-  toolBonus: 8,  // 工具执行中的额外加成
-  decay: 3.2,    // 渐近速度（越小越快逼近上限）
-};
-```
-
-输出路径可通过环境变量 `DSH_HOME` 覆盖，默认 `~/.dsh`。
-
----
-
-## 实现说明
-
-- **Host-only bundle**：`inject = ['sessions', 'agents']`，只读不写
-- 每 **300ms** 轮询 `ctx.sessions.list()`，增量读取 `session.eventAt(i)`（按 `seq` 推进，不重复处理）
-- 用 `ctx.agents.get(sessionId)?.status === 'running'` 兜底识别运行中的 Agent
-- 会话消失时清理对应的 `lastSeq` / `activeTurns` / `pendingApprovals`
-- 所有定时器都 `unref()`，不会阻止宿主退出
-- 写入失败（如主目录只读）静默忽略，**不会拖垮 Harness**
 
 ---
 
@@ -260,7 +161,7 @@ const PROGRESS = {
 
 ## 相关项目
 
-- **DshHaloRing** — Windows 11 托盘环形状态指示灯，本插件的主要消费者
+- **DshHaloRing** — Windows 11 托盘环形状态指示灯
 
 ## 许可证
 
